@@ -80,7 +80,7 @@ changed:
     returned: always
     type: bool
     sample: False
-Results:
+objects:
     description: List containing a set of facts for each selected object.
     returned: always
     type: list
@@ -148,7 +148,7 @@ class AzureRMNetworkInterfaceFacts(AzureRMModuleBase):
 
         self.results = dict(
             changed=False,
-            results=[]
+            objects=[]
         )
 
         self.name = None
@@ -169,11 +169,11 @@ class AzureRMNetworkInterfaceFacts(AzureRMModuleBase):
             self.fail("Parameter error: resource group required when filtering by name.")
 
         if self.name:
-            self.results['results'] = self.get_item()
+            self.results['objects'] = self.get_item()
         elif self.resource_group:
-            self.results['results'] = self.list_resource_group()
+            self.results['objects'] = self.list_resource_group()
         else:
-            self.results['results'] = self.list_all()
+            self.results['objects'] = self.list_all()
 
         return self.results
 
