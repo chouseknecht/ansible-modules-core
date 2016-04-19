@@ -203,12 +203,7 @@ changed:
     returned: always
     type: bool
     sample: True
-check_mode:
-    description: Whether or not the module was executed in check mode.
-    returned: always
-    type: bool
-    sample: True
-Results:
+state:
     description: Facts about the current state of the object.
     returned: always
     type: dict
@@ -314,8 +309,8 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
     def __init__(self):
 
         self.module_arg_spec = dict(
-            resource_group=dict(required=True),
-            name=dict(required=True),
+            resource_group=dict(type='str', required=True),
+            name=dict(type='str', required=True),
             location=dict(type='str'),
             security_group_name=dict(type='str', aliases=['security_group']),
             state=dict(default='present', choices=['present', 'absent']),
@@ -349,7 +344,7 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
 
         self.results = dict(
             changed=False,
-            results=dict(),
+            state=dict(),
         )
 
         super(AzureRMNetworkInterface, self).__init__(derived_arg_spec=self.module_arg_spec,
@@ -359,8 +354,6 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
 
         for key in self.module_arg_spec.keys() + ['tags']:
             setattr(self, key, kwargs[key])
-
-        self.results['check_mode'] = self.check_mode
 
         results = dict()
         changed = False
@@ -456,7 +449,7 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
                 changed = True
 
         self.results['changed'] = changed
-        self.results['results'] = results
+        self.results['state'] = results
 
         if self.check_mode:
             return self.results
@@ -549,7 +542,7 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
                 request = self.serialize_obj(nic, 'NetworkInterface')
                 self.log(request, pretty_print=True)
 
-                self.results['results'] = self.create_or_update_nic(nic)
+                self.results['state'] = self.create_or_update_nic(nic)
 
             elif self.state == 'absent':
                 self.log('Deleting network interface {0}'.format(self.name))
@@ -581,7 +574,7 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
             self.fail("Error deleting network interface {0} - {1}".format(self.name, str(exc)))
         self.get_poller_result(poller)
         # Delete doesn't return anything. If we get this far, assume success
-        self.results['results'] = 'Deleted'
+        self.results['state']['status'] = 'Deleted'
         return True
 
     def get_public_ip_address(self, name):
