@@ -403,7 +403,7 @@ author:
     - "Thomas Steinbach (@ThomasSteinbach)"
     - "Philippe Jandot (@zfil)"
     - "Daan Oosterveld (@dusdanig)"
-    - "James Tanner (@jtanner)"
+    - "James Tanner (@jctanner)"
     - "Chris Houseknecht (@chouseknecht)"
 
 requirements:
@@ -569,6 +569,7 @@ class TaskParameters(DockerBaseClass):
         self.cpuset_cpus = None
         self.cpuset_mems = None
         self.cpu_shares = None
+        self.debug = False
         self.detach = None
         self.devices = None
         self.dns_servers = None
@@ -623,7 +624,7 @@ class TaskParameters(DockerBaseClass):
         self.debug = None
         self.debug_file = None
 
-        for key, value in client.module.params.iteritems():
+        for key, value in client.module.params.items():
             setattr(self, key, value)
 
         for param_name in REQUIRES_CONVERSION_TO_BYTES:
@@ -920,6 +921,7 @@ class Container(DockerBaseClass):
             self.Image = container['Image']
         self.log(self.container, pretty_print=True)
         self.parameters = parameters
+        self.debug = self.parameters.debug
         self.parameters.expected_links = None
         self.parameters.expected_ports = None
         self.parameters.expected_exposed = None
@@ -957,8 +959,6 @@ class Container(DockerBaseClass):
         self.parameters.expected_env = self._get_expected_env(image)
         self.parameters.expected_cmd = self._get_expected_cmd()
 
-        self.log("here!!")
-
         if not self.container.get('HostConfig'):
             self.fail("has_config_diff: Error parsing container properties. HostConfig missing.")
         if not self.container.get('Config'):
@@ -977,7 +977,6 @@ class Container(DockerBaseClass):
         # assuming if the container was running, it must have detached.
         detach = not (config.get('AttachStderr') and config.get('AttachStdout'))
 
-        self.log("command")
         self.log(self.parameters.command, pretty_print=True)
         self.log(self.parameters.expected_ulimits, pretty_print=True)
 
@@ -1329,6 +1328,7 @@ class ContainerManager(DockerBaseClass):
         self.results = results
         self.parameters = TaskParameters(client)
         self.check_mode = self.client.check_mode
+        self.debug = self.parameters.debug
 
         state = self.parameters.state
         if state in ('started', 'present'):
