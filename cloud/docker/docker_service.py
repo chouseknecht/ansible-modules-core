@@ -42,6 +42,16 @@ options:
         - Required when no C(definition) is provided.
       type: path
       required: false
+  dest:
+      description:
+        - Use when running docker_service on a remote host to recursively copy the contents of C(project_src) from
+          the control host into C(dest) on the remote host. Only files found in C(project_src) are copied. Anything
+          referenced in docker-compose.yml that may exist outside of C(project_src) will not be copied.
+        - Supply the final directory path. For example, if the basename of C(project_src) is I(foo), and the
+          desired basename of C(dest) is also C(foo), then include C(foo) in C(dest).
+      type: path
+      required: false
+      version_added: "2.2"
   project_name:
       description:
         - Provide a project name. If not provided, the project name is taken from the basename of C(project_src).
@@ -274,6 +284,14 @@ EXAMPLES = '''
         that:
           - "web.flask_web_1.state.running"
           - "db.flask_db_1.state.running"
+
+- name: Copy project_src to dest on target host
+  hosts: centosv
+  tasks:
+    - docker_service:
+        project_name: django_flask
+        project_src: flask
+        dest: ~/flask
 
 - name: Run with inline v1 compose
   hosts: localhost
@@ -519,6 +537,9 @@ class ContainerManager(DockerBaseClass):
         if not self.debug:
             self.debug = client.module._debug
 
+        if self.dest and not self.project_src:
+            self.client.fail("Parameter error: project_src required when specifying dest.")
+
         self.options = dict()
         self.options.update(self._get_auth_options())
         self.options[u'--skip-hostname-check'] = (not self.hostname_check)
@@ -655,7 +676,7 @@ class ContainerManager(DockerBaseClass):
                     detached=detached,
                     remove_orphans=self.remove_orphans)
             except Exception as exc:
-                self.client.fail("Error bring %s up - %s" % (self.project.name, str(exc)))
+                self.client.fail("Encountered errors while starting project %s" % self.project.name)
 
         if self.stopped:
             result.update(self.cmd_stop(service_names))
@@ -886,6 +907,7 @@ class ContainerManager(DockerBaseClass):
 def main():
     argument_spec = dict(
         project_src=dict(type='path'),
+        dest=dict(type='path'),
         project_name=dict(type='str',),
         files=dict(type='list'),
         state=dict(type='str', choices=['absent', 'present'], default='present'),
