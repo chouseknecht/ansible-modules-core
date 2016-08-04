@@ -255,6 +255,7 @@ class ImageManager(DockerBaseClass):
         self.tag = parameters.get('tag')
         self.http_timeout = parameters.get('http_timeout')
         self.push = parameters.get('push')
+        self.debug = parameters.get('debug')
 
         if self.state in ['present', 'build']:
             self.present()
@@ -425,9 +426,12 @@ class ImageManager(DockerBaseClass):
         :return: None
         '''
         repo, repo_tag = parse_repository_tag(repository)
+        if not repo_tag:
+           repo_tag = "latest"
         image = self.client.find_image(name=repo, tag=repo_tag)
         found = 'found' if image else 'not found'
         self.log("image %s was %s" % (repo, found))
+
         if not image or force:
             self.log("tagging %s:%s to %s" % (name, tag, repository))
             self.results['changed'] = True
@@ -439,14 +443,14 @@ class ImageManager(DockerBaseClass):
                     image_name = name
                     if tag and not re.search(tag, name):
                         image_name = "%s:%s" % (name, tag)
-                    tag_status = self.client.tag(image_name, repository, tag=tag, force=True)
+                    tag_status = self.client.tag(image_name, repo, tag=repo_tag, force=True)
                     if not tag_status:
                         raise Exception("Tag operation failed.")
                 except Exception as exc:
-                    self.fail("Error: failed to tag image %s - %s" % (name, str(exc)))
-                self.results['image'] = self.client.find_image(name=repository, tag=tag)
+                    self.fail("Error: failed to tag image - %s" % str(exc))
+                self.results['image'] = self.client.find_image(name=repo, tag=repo_tag)
                 if push:
-                    self.push_image(repository, tag)
+                    self.push_image(repo, repo_tag)
 
     def build_image(self):
         '''
