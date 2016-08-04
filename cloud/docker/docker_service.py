@@ -42,12 +42,6 @@ options:
         - Required when no C(definition) is provided.
       type: path
       required: false
-  remote_src:
-      description:
-        - Use when running docker_service on a remote host to copy C(project_src) from the control host to
-          C(remote_src) on the remote host.
-      type: path
-      required: false
   project_name:
       description:
         - Provide a project name. If not provided, the project name is taken from the basename of C(project_src).
@@ -535,9 +529,6 @@ class ContainerManager(DockerBaseClass):
         if self.files:
             self.options[u'--file'] = self.files
 
-        if self.remote_src and not self.project_src:
-            self.client.fail("Parameter error: project_src required when specifying remote_src.")
-
         if not HAS_COMPOSE:
             self.client.fail("Unable to load docker-compose. Try `pip install docker-compose`. Error: %s" % HAS_COMPOSE_EXC)
 
@@ -664,7 +655,7 @@ class ContainerManager(DockerBaseClass):
                     detached=detached,
                     remove_orphans=self.remove_orphans)
             except Exception as exc:
-                self.client.fail("Encountered errors while starting project %s" % self.project.name)
+                self.client.fail("Error bring %s up - %s" % (self.project.name, str(exc)))
 
         if self.stopped:
             result.update(self.cmd_stop(service_names))
@@ -895,7 +886,6 @@ class ContainerManager(DockerBaseClass):
 def main():
     argument_spec = dict(
         project_src=dict(type='path'),
-        remote_src=dict(type='path'),
         project_name=dict(type='str',),
         files=dict(type='list'),
         state=dict(type='str', choices=['absent', 'present'], default='present'),
