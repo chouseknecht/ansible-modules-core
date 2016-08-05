@@ -32,9 +32,14 @@ description:
 options:
   archive_path:
     description:
-      - Use with state C(presen) to archive an image to a .tar file.
+      - Use with state C(present) to archive an image to a .tar file.
     required: false
     version_added: "2.1"
+  load_path:
+    description:
+      - Use with state C(present) to load an image from a .tar file.
+    required: false
+    version_added: "2.2"
   dockerfile:
     description:
       - Use with state C(present) to provide an alternate name for the Dockerfile to use when building an image.
